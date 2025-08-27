@@ -54,4 +54,4 @@ for _, service in pairs(game:GetChildren()) do
     scanRemotes(service)
 end
 
-addLog("✅ Scan selesai!", Color3.fromRGB(100,255,100))
+addLog("✅ Scanning is done!", Color3.fromRGB(100,255,100))
