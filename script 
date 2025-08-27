@@ -1,0 +1,57 @@
+-- 🔍 Backdoor Scanner GUI (Client-Side)
+-- Paste ke Delta
+
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 400, 0, 300)
+Frame.Position = UDim2.new(0.5, -200, 0.5, -150)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Frame.Active = true
+Frame.Draggable = true
+
+local Scrolling = Instance.new("ScrollingFrame", Frame)
+Scrolling.Size = UDim2.new(1, -10, 1, -10)
+Scrolling.Position = UDim2.new(0,5,0,5)
+Scrolling.CanvasSize = UDim2.new(0,0,0,0)
+
+local UIListLayout = Instance.new("UIListLayout", Scrolling)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local function addLog(text, color)
+    local Label = Instance.new("TextLabel", Scrolling)
+    Label.Size = UDim2.new(1, -5, 0, 20)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = color
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Scrolling.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y + 10)
+end
+
+-- Scan Script/Module
+local function scanScripts(container)
+    for _, obj in pairs(container:GetDescendants()) do
+        if obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("Script") then
+            local suspicious = obj.Name:lower():find("require") or obj.Name:lower():find("admin")
+            if suspicious then
+                addLog("⚠️ Potensi backdoor (nama mencurigakan): "..obj:GetFullName(), Color3.fromRGB(255,100,100))
+            end
+        end
+    end
+end
+
+-- Scan Remote
+local function scanRemotes(container)
+    for _, obj in pairs(container:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            addLog("🔎 Remote ditemukan: "..obj:GetFullName(), Color3.fromRGB(255,255,100))
+        end
+    end
+end
+
+-- Lakukan Scan
+for _, service in pairs(game:GetChildren()) do
+    scanScripts(service)
+    scanRemotes(service)
+end
+
+addLog("✅ Scan selesai!", Color3.fromRGB(100,255,100))
