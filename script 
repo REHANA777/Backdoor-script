@@ -1,5 +1,3 @@
--- 🔍 Backdoor Scanner GUI (Client-Side)
--- Paste ke Delta
 
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local Frame = Instance.new("Frame", ScreenGui)
@@ -33,7 +31,7 @@ local function scanScripts(container)
         if obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("Script") then
             local suspicious = obj.Name:lower():find("require") or obj.Name:lower():find("admin")
             if suspicious then
-                addLog("⚠️ Potensi backdoor (nama mencurigakan): "..obj:GetFullName(), Color3.fromRGB(255,100,100))
+                addLog("⚠️ Potential backdoor (nama mencurigakan): "..obj:GetFullName(), Color3.fromRGB(255,100,100))
             end
         end
     end
@@ -43,12 +41,12 @@ end
 local function scanRemotes(container)
     for _, obj in pairs(container:GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            addLog("🔎 Remote ditemukan: "..obj:GetFullName(), Color3.fromRGB(255,255,100))
+            addLog("🔎 Remote founded: "..obj:GetFullName(), Color3.fromRGB(255,255,100))
         end
     end
 end
 
--- Lakukan Scan
+
 for _, service in pairs(game:GetChildren()) do
     scanScripts(service)
     scanRemotes(service)
