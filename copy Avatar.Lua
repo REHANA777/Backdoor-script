@@ -1,6 +1,4 @@
--- Copy Avatar GUI (client-side only)
--- LocalScript @ StarterPlayerScripts
-
+-- Copy Avatar GUI (client-side only, siap di-loadstring)
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
@@ -8,7 +6,8 @@ local player = Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "CopyAvatarGUI"
 gui.ResetOnSpawn = false
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.IgnoreGuiInset = true
+gui.Parent = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui")
 
 -- Toggle button (ikon lingkaran hitam kecil, teks "Copy Avatar")
 local toggle = Instance.new("TextButton")
@@ -86,7 +85,6 @@ end
 local function ensureOriginalSaved()
 	local hum = getHumanoid()
 	if not originalDesc then
-		-- clone supaya aman
 		local ok, desc = pcall(function()
 			return hum:GetAppliedDescription()
 		end)
@@ -97,10 +95,9 @@ local function ensureOriginalSaved()
 	end
 end
 
--- Apply description client-only (biar cuma kelihatan di kamu)
+-- Apply description client-only
 local function applyDescriptionClient(desc: HumanoidDescription)
 	local hum = getHumanoid()
-	-- Enum.AssetTypeVerification.ClientOnly memastikan ini tidak request ke server
 	local ok, err = pcall(function()
 		hum:ApplyDescription(desc, Enum.AssetTypeVerification.ClientOnly)
 	end)
@@ -129,7 +126,6 @@ local function copyAvatarByUsername(username: string)
 
 	ensureOriginalSaved()
 
-	-- Simpan lastCopiedDesc (clone)
 	lastCopiedDesc = Instance.new("HumanoidDescription")
 	lastCopiedDesc:ApplyDescription(targetDesc)
 
@@ -144,7 +140,7 @@ local function uncopyAvatar()
 	btnUncopy.Visible = false
 end
 
--- Re-apply saat respawn (kalau sebelumnya sudah copy)
+-- Respawn handler
 player.CharacterAdded:Connect(function()
 	if lastCopiedDesc then
 		task.defer(function()
@@ -169,7 +165,6 @@ btnUncopy.MouseButton1Click:Connect(function()
 	uncopyAvatar()
 end)
 
--- OPTIONAL: tekan Enter di TextBox = Copy
 box.FocusLost:Connect(function(enterPressed)
 	if enterPressed then
 		copyAvatarByUsername(box.Text)
