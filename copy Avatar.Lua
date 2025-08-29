@@ -1,13 +1,15 @@
--- Copy Avatar GUI (client-side only, siap di-loadstring)
+-- Copy Avatar GUI (client-side only, versi CoreGui biar muncul di Delta)
+
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
+
+print(">>> Copy Avatar GUI Loaded")
 
 -- ===== UI =====
 local gui = Instance.new("ScreenGui")
 gui.Name = "CopyAvatarGUI"
 gui.ResetOnSpawn = false
-gui.IgnoreGuiInset = true
-gui.Parent = player:FindFirstChildOfClass("PlayerGui") or player:WaitForChild("PlayerGui")
+gui.Parent = game:GetService("CoreGui") -- ganti biar selalu muncul
 
 -- Toggle button (ikon lingkaran hitam kecil, teks "Copy Avatar")
 local toggle = Instance.new("TextButton")
@@ -22,7 +24,7 @@ toggle.AutoButtonColor = true
 toggle.BorderSizePixel = 0
 toggle.ZIndex = 2
 toggle.Parent = gui
-local tgCorner = Instance.new("UICorner", toggle); tgCorner.CornerRadius = UDim.new(1,0)
+Instance.new("UICorner", toggle).CornerRadius = UDim.new(1,0)
 
 -- Panel kecil saat dibuka
 local panel = Instance.new("Frame")
@@ -34,7 +36,7 @@ panel.BackgroundTransparency = 0.35
 panel.BorderSizePixel = 0
 panel.Visible = false
 panel.Parent = gui
-local pCorner = Instance.new("UICorner", panel); pCorner.CornerRadius = UDim.new(0,12)
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,12)
 
 -- TextBox username (abu-abu)
 local box = Instance.new("TextBox")
@@ -47,7 +49,7 @@ box.TextColor3 = Color3.new(1,1,1)
 box.ClearTextOnFocus = false
 box.BorderSizePixel = 0
 box.Parent = panel
-local bCorner = Instance.new("UICorner", box); bCorner.CornerRadius = UDim.new(0,6)
+Instance.new("UICorner", box).CornerRadius = UDim.new(0,6)
 
 -- Tombol Copy (hijau)
 local btnCopy = Instance.new("TextButton")
@@ -58,9 +60,9 @@ btnCopy.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
 btnCopy.TextColor3 = Color3.new(1,1,1)
 btnCopy.BorderSizePixel = 0
 btnCopy.Parent = panel
-local cCorner = Instance.new("UICorner", btnCopy); cCorner.CornerRadius = UDim.new(0,6)
+Instance.new("UICorner", btnCopy).CornerRadius = UDim.new(0,6)
 
--- Tombol Uncopy (merah) — muncul setelah sukses copy
+-- Tombol Uncopy (merah)
 local btnUncopy = Instance.new("TextButton")
 btnUncopy.Size = UDim2.new(0, 84, 0, 30)
 btnUncopy.Position = UDim2.new(0, 116, 0, 70)
@@ -70,18 +72,17 @@ btnUncopy.TextColor3 = Color3.new(1,1,1)
 btnUncopy.BorderSizePixel = 0
 btnUncopy.Visible = false
 btnUncopy.Parent = panel
-local uCorner = Instance.new("UICorner", btnUncopy); uCorner.CornerRadius = UDim.new(0,6)
+Instance.new("UICorner", btnUncopy).CornerRadius = UDim.new(0,6)
 
 -- ===== LOGIC =====
-local originalDesc :: HumanoidDescription? = nil
-local lastCopiedDesc :: HumanoidDescription? = nil
+local originalDesc
+local lastCopiedDesc
 
 local function getHumanoid()
 	local char = player.Character or player.CharacterAdded:Wait()
 	return char:WaitForChild("Humanoid")
 end
 
--- Simpan deskripsi asli sekali saja
 local function ensureOriginalSaved()
 	local hum = getHumanoid()
 	if not originalDesc then
@@ -95,8 +96,7 @@ local function ensureOriginalSaved()
 	end
 end
 
--- Apply description client-only
-local function applyDescriptionClient(desc: HumanoidDescription)
+local function applyDescriptionClient(desc)
 	local hum = getHumanoid()
 	local ok, err = pcall(function()
 		hum:ApplyDescription(desc, Enum.AssetTypeVerification.ClientOnly)
@@ -106,8 +106,10 @@ local function applyDescriptionClient(desc: HumanoidDescription)
 	end
 end
 
-local function copyAvatarByUsername(username: string)
+local function copyAvatarByUsername(username)
 	if not username or username == "" then return end
+	print(">>> Try copy avatar:", username)
+
 	local okId, userId = pcall(function()
 		return Players:GetUserIdFromNameAsync(username)
 	end)
@@ -125,7 +127,6 @@ local function copyAvatarByUsername(username: string)
 	end
 
 	ensureOriginalSaved()
-
 	lastCopiedDesc = Instance.new("HumanoidDescription")
 	lastCopiedDesc:ApplyDescription(targetDesc)
 
@@ -140,7 +141,6 @@ local function uncopyAvatar()
 	btnUncopy.Visible = false
 end
 
--- Respawn handler
 player.CharacterAdded:Connect(function()
 	if lastCopiedDesc then
 		task.defer(function()
