@@ -1,166 +1,177 @@
---// LocalScript, taruh di StarterPlayerScripts
+-- Copy Avatar GUI (client-side only)
+-- LocalScript @ StarterPlayerScripts
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 
--- GUI Utama
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player:WaitForChild("PlayerGui")
+-- ===== UI =====
+local gui = Instance.new("ScreenGui")
+gui.Name = "CopyAvatarGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- Ikon lingkaran (tombol buka/tutup)
-local circleButton = Instance.new("TextButton")
-circleButton.Size = UDim2.new(0, 60, 0, 60)
-circleButton.Position = UDim2.new(0, 20, 0.5, -30)
-circleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
-circleButton.Text = "Copy\nAvatar"
-circleButton.TextScaled = true
-circleButton.TextColor3 = Color3.new(1,1,1)
-circleButton.Parent = screenGui
-circleButton.BorderSizePixel = 0
-circleButton.AutoButtonColor = true
-circleButton.ZIndex = 2
+-- Toggle button (ikon lingkaran hitam kecil, teks "Copy Avatar")
+local toggle = Instance.new("TextButton")
+toggle.Name = "Toggle"
+toggle.Size = UDim2.new(0, 56, 0, 56)
+toggle.Position = UDim2.new(0, 16, 0.5, -28)
+toggle.BackgroundColor3 = Color3.fromRGB(0,0,0)
+toggle.Text = "Copy\nAvatar"
+toggle.TextColor3 = Color3.new(1,1,1)
+toggle.TextScaled = true
+toggle.AutoButtonColor = true
+toggle.BorderSizePixel = 0
+toggle.ZIndex = 2
+toggle.Parent = gui
+local tgCorner = Instance.new("UICorner", toggle); tgCorner.CornerRadius = UDim.new(1,0)
 
--- Biar jadi lingkaran
-local uicorner = Instance.new("UICorner")
-uicorner.CornerRadius = UDim.new(1,0)
-uicorner.Parent = circleButton
+-- Panel kecil saat dibuka
+local panel = Instance.new("Frame")
+panel.Name = "Panel"
+panel.Size = UDim2.new(0, 220, 0, 140)
+panel.Position = UDim2.new(0, 84, 0.5, -70)
+panel.BackgroundColor3 = Color3.fromRGB(0,0,0)
+panel.BackgroundTransparency = 0.35
+panel.BorderSizePixel = 0
+panel.Visible = false
+panel.Parent = gui
+local pCorner = Instance.new("UICorner", panel); pCorner.CornerRadius = UDim.new(0,12)
 
--- Frame Panel
-local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 220, 0, 140)
-mainFrame.Position = UDim2.new(0, 90, 0.5, -70)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-mainFrame.BackgroundTransparency = 0.3
-mainFrame.Visible = false
-mainFrame.Parent = screenGui
-mainFrame.BorderSizePixel = 0
+-- TextBox username (abu-abu)
+local box = Instance.new("TextBox")
+box.Size = UDim2.new(0, 180, 0, 32)
+box.Position = UDim2.new(0, 20, 0, 20)
+box.PlaceholderText = "Masukin Username..."
+box.Text = ""
+box.BackgroundColor3 = Color3.fromRGB(80,80,80)
+box.TextColor3 = Color3.new(1,1,1)
+box.ClearTextOnFocus = false
+box.BorderSizePixel = 0
+box.Parent = panel
+local bCorner = Instance.new("UICorner", box); bCorner.CornerRadius = UDim.new(0,6)
 
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0,12)
-corner.Parent = mainFrame
+-- Tombol Copy (hijau)
+local btnCopy = Instance.new("TextButton")
+btnCopy.Size = UDim2.new(0, 84, 0, 30)
+btnCopy.Position = UDim2.new(0, 20, 0, 70)
+btnCopy.Text = "Copy"
+btnCopy.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+btnCopy.TextColor3 = Color3.new(1,1,1)
+btnCopy.BorderSizePixel = 0
+btnCopy.Parent = panel
+local cCorner = Instance.new("UICorner", btnCopy); cCorner.CornerRadius = UDim.new(0,6)
 
--- TextBox username
-local usernameBox = Instance.new("TextBox")
-usernameBox.Size = UDim2.new(0, 180, 0, 30)
-usernameBox.Position = UDim2.new(0, 20, 0, 20)
-usernameBox.PlaceholderText = "Masukin Username..."
-usernameBox.BackgroundColor3 = Color3.fromRGB(80,80,80)
-usernameBox.TextColor3 = Color3.new(1,1,1)
-usernameBox.ClearTextOnFocus = false
-usernameBox.Parent = mainFrame
-usernameBox.BorderSizePixel = 0
+-- Tombol Uncopy (merah) — muncul setelah sukses copy
+local btnUncopy = Instance.new("TextButton")
+btnUncopy.Size = UDim2.new(0, 84, 0, 30)
+btnUncopy.Position = UDim2.new(0, 116, 0, 70)
+btnUncopy.Text = "Uncopy"
+btnUncopy.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+btnUncopy.TextColor3 = Color3.new(1,1,1)
+btnUncopy.BorderSizePixel = 0
+btnUncopy.Visible = false
+btnUncopy.Parent = panel
+local uCorner = Instance.new("UICorner", btnUncopy); uCorner.CornerRadius = UDim.new(0,6)
 
-local usernameCorner = Instance.new("UICorner")
-usernameCorner.CornerRadius = UDim.new(0,6)
-usernameCorner.Parent = usernameBox
+-- ===== LOGIC =====
+local originalDesc :: HumanoidDescription? = nil
+local lastCopiedDesc :: HumanoidDescription? = nil
 
--- Tombol Copy
-local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(0, 80, 0, 30)
-copyButton.Position = UDim2.new(0, 20, 0, 70)
-copyButton.Text = "Copy"
-copyButton.BackgroundColor3 = Color3.fromRGB(0,200,0)
-copyButton.TextColor3 = Color3.new(1,1,1)
-copyButton.Parent = mainFrame
-copyButton.BorderSizePixel = 0
+local function getHumanoid()
+	local char = player.Character or player.CharacterAdded:Wait()
+	return char:WaitForChild("Humanoid")
+end
 
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0,6)
-copyCorner.Parent = copyButton
+-- Simpan deskripsi asli sekali saja
+local function ensureOriginalSaved()
+	local hum = getHumanoid()
+	if not originalDesc then
+		-- clone supaya aman
+		local ok, desc = pcall(function()
+			return hum:GetAppliedDescription()
+		end)
+		if ok and desc then
+			originalDesc = Instance.new("HumanoidDescription")
+			originalDesc:ApplyDescription(desc)
+		end
+	end
+end
 
--- Tombol Uncopy (default hidden)
-local uncopyButton = Instance.new("TextButton")
-uncopyButton.Size = UDim2.new(0, 80, 0, 30)
-uncopyButton.Position = UDim2.new(0, 120, 0, 70)
-uncopyButton.Text = "Uncopy"
-uncopyButton.BackgroundColor3 = Color3.fromRGB(200,0,0)
-uncopyButton.TextColor3 = Color3.new(1,1,1)
-uncopyButton.Visible = false
-uncopyButton.Parent = mainFrame
-uncopyButton.BorderSizePixel = 0
+-- Apply description client-only (biar cuma kelihatan di kamu)
+local function applyDescriptionClient(desc: HumanoidDescription)
+	local hum = getHumanoid()
+	-- Enum.AssetTypeVerification.ClientOnly memastikan ini tidak request ke server
+	local ok, err = pcall(function()
+		hum:ApplyDescription(desc, Enum.AssetTypeVerification.ClientOnly)
+	end)
+	if not ok then
+		warn("Gagal apply description:", err)
+	end
+end
 
-local uncopyCorner = Instance.new("UICorner")
-uncopyCorner.CornerRadius = UDim.new(0,6)
-uncopyCorner.Parent = uncopyButton
-
--- Fungsi Copy Avatar
-local originalAssets = {}
-
-local function CopyAvatar(username)
-	local success, targetUserId = pcall(function()
+local function copyAvatarByUsername(username: string)
+	if not username or username == "" then return end
+	local okId, userId = pcall(function()
 		return Players:GetUserIdFromNameAsync(username)
 	end)
+	if not okId then
+		warn("Username nggak ketemu:", username)
+		return
+	end
 
-	if success and targetUserId then
-		local success2, characterModel = pcall(function()
-			return Players:GetCharacterAppearanceAsync(targetUserId)
+	local okDesc, targetDesc = pcall(function()
+		return Players:GetHumanoidDescriptionFromUserId(userId)
+	end)
+	if not okDesc then
+		warn("Gagal ambil HumanoidDescription target")
+		return
+	end
+
+	ensureOriginalSaved()
+
+	-- Simpan lastCopiedDesc (clone)
+	lastCopiedDesc = Instance.new("HumanoidDescription")
+	lastCopiedDesc:ApplyDescription(targetDesc)
+
+	applyDescriptionClient(lastCopiedDesc)
+	btnUncopy.Visible = true
+end
+
+local function uncopyAvatar()
+	if originalDesc then
+		applyDescriptionClient(originalDesc)
+	end
+	btnUncopy.Visible = false
+end
+
+-- Re-apply saat respawn (kalau sebelumnya sudah copy)
+player.CharacterAdded:Connect(function()
+	if lastCopiedDesc then
+		task.defer(function()
+			applyDescriptionClient(lastCopiedDesc)
+			btnUncopy.Visible = true
 		end)
-
-		if success2 and characterModel then
-			local char = player.Character or player.CharacterAdded:Wait()
-			
-			-- Simpan asset asli kalau belum ada
-			if #originalAssets == 0 then
-				for _, obj in ipairs(char:GetChildren()) do
-					if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
-						table.insert(originalAssets, obj:Clone())
-					end
-				end
-			end
-
-			-- hapus avatar lama
-			for _, obj in ipairs(char:GetChildren()) do
-				if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
-					obj:Destroy()
-				end
-			end
-
-			-- clone dari target
-			for _, obj in ipairs(characterModel:GetChildren()) do
-				if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
-					obj:Clone().Parent = char
-				end
-			end
-
-			uncopyButton.Visible = true
-		else
-			warn("Gagal ambil avatar!")
-		end
 	else
-		warn("Username tidak ditemukan!")
-	end
-end
-
--- Fungsi Uncopy Avatar
-local function UncopyAvatar()
-	local char = player.Character or player.CharacterAdded:Wait()
-
-	-- hapus avatar hasil copy
-	for _, obj in ipairs(char:GetChildren()) do
-		if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
-			obj:Destroy()
-		end
-	end
-
-	-- kembalikan avatar asli
-	for _, obj in ipairs(originalAssets) do
-		obj:Clone().Parent = char
-	end
-
-	uncopyButton.Visible = false
-end
-
--- Event
-copyButton.MouseButton1Click:Connect(function()
-	if usernameBox.Text ~= "" then
-		CopyAvatar(usernameBox.Text)
+		btnUncopy.Visible = false
 	end
 end)
 
-uncopyButton.MouseButton1Click:Connect(function()
-	UncopyAvatar()
+-- ===== EVENTS =====
+toggle.MouseButton1Click:Connect(function()
+	panel.Visible = not panel.Visible
 end)
 
-circleButton.MouseButton1Click:Connect(function()
-	mainFrame.Visible = not mainFrame.Visible
+btnCopy.MouseButton1Click:Connect(function()
+	copyAvatarByUsername(box.Text)
+end)
+
+btnUncopy.MouseButton1Click:Connect(function()
+	uncopyAvatar()
+end)
+
+-- OPTIONAL: tekan Enter di TextBox = Copy
+box.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		copyAvatarByUsername(box.Text)
+	end
 end)
