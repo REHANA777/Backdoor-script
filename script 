@@ -1,72 +1,166 @@
--- GUI Scanner dengan tombol Rescan
-local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
-local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0,400,0,350)
-Frame.AnchorPoint = Vector2.new(0.5, 0.5)
-Frame.Position = UDim2.new(0.5,0,0.5,0)
-Frame.BackgroundColor3 = Color3.fromRGB(40,40,40)
-Frame.Active = true
-Frame.Draggable = true
+--// LocalScript, taruh di StarterPlayerScripts
 
-local Title = Instance.new("TextLabel", Frame)
-Title.Size = UDim2.new(1, -10, 0, 30)
-Title.Position = UDim2.new(0,5,0,5)
-Title.Text = "Backdoor Detector"
-Title.TextColor3 = Color3.new(1,1,1)
-Title.BackgroundTransparency = 1
-Title.Font = Enum.Font.SourceSansBold
-Title.TextSize = 20
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
-local Scrolling = Instance.new("ScrollingFrame", Frame)
-Scrolling.Size = UDim2.new(1, -10, 1, -70)
-Scrolling.Position = UDim2.new(0,5,0,40)
-Scrolling.CanvasSize = UDim2.new(0,0,0,0)
+-- GUI Utama
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
-local UIListLayout = Instance.new("UIListLayout", Scrolling)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+-- Ikon lingkaran (tombol buka/tutup)
+local circleButton = Instance.new("TextButton")
+circleButton.Size = UDim2.new(0, 60, 0, 60)
+circleButton.Position = UDim2.new(0, 20, 0.5, -30)
+circleButton.BackgroundColor3 = Color3.fromRGB(0,0,0)
+circleButton.Text = "Copy\nAvatar"
+circleButton.TextScaled = true
+circleButton.TextColor3 = Color3.new(1,1,1)
+circleButton.Parent = screenGui
+circleButton.BorderSizePixel = 0
+circleButton.AutoButtonColor = true
+circleButton.ZIndex = 2
 
-local Rescan = Instance.new("TextButton", Frame)
-Rescan.Size = UDim2.new(1, -10, 0, 25)
-Rescan.Position = UDim2.new(0,5,1,-30)
-Rescan.Text = "Rescan"
-Rescan.BackgroundColor3 = Color3.fromRGB(80,80,80)
-Rescan.TextColor3 = Color3.new(1,1,1)
-Rescan.Font = Enum.Font.SourceSans
-Rescan.TextSize = 18
+-- Biar jadi lingkaran
+local uicorner = Instance.new("UICorner")
+uicorner.CornerRadius = UDim.new(1,0)
+uicorner.Parent = circleButton
 
-local function log(msg, col)
-    local Label = Instance.new("TextLabel", Scrolling)
-    Label.Size = UDim2.new(1, -5, 0, 20)
-    Label.BackgroundTransparency = 1
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Text = msg
-    Label.TextColor3 = col
-    Scrolling.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y + 10)
+-- Frame Panel
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 220, 0, 140)
+mainFrame.Position = UDim2.new(0, 90, 0.5, -70)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+mainFrame.BorderSizePixel = 0
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0,12)
+corner.Parent = mainFrame
+
+-- TextBox username
+local usernameBox = Instance.new("TextBox")
+usernameBox.Size = UDim2.new(0, 180, 0, 30)
+usernameBox.Position = UDim2.new(0, 20, 0, 20)
+usernameBox.PlaceholderText = "Masukin Username..."
+usernameBox.BackgroundColor3 = Color3.fromRGB(80,80,80)
+usernameBox.TextColor3 = Color3.new(1,1,1)
+usernameBox.ClearTextOnFocus = false
+usernameBox.Parent = mainFrame
+usernameBox.BorderSizePixel = 0
+
+local usernameCorner = Instance.new("UICorner")
+usernameCorner.CornerRadius = UDim.new(0,6)
+usernameCorner.Parent = usernameBox
+
+-- Tombol Copy
+local copyButton = Instance.new("TextButton")
+copyButton.Size = UDim2.new(0, 80, 0, 30)
+copyButton.Position = UDim2.new(0, 20, 0, 70)
+copyButton.Text = "Copy"
+copyButton.BackgroundColor3 = Color3.fromRGB(0,200,0)
+copyButton.TextColor3 = Color3.new(1,1,1)
+copyButton.Parent = mainFrame
+copyButton.BorderSizePixel = 0
+
+local copyCorner = Instance.new("UICorner")
+copyCorner.CornerRadius = UDim.new(0,6)
+copyCorner.Parent = copyButton
+
+-- Tombol Uncopy (default hidden)
+local uncopyButton = Instance.new("TextButton")
+uncopyButton.Size = UDim2.new(0, 80, 0, 30)
+uncopyButton.Position = UDim2.new(0, 120, 0, 70)
+uncopyButton.Text = "Uncopy"
+uncopyButton.BackgroundColor3 = Color3.fromRGB(200,0,0)
+uncopyButton.TextColor3 = Color3.new(1,1,1)
+uncopyButton.Visible = false
+uncopyButton.Parent = mainFrame
+uncopyButton.BorderSizePixel = 0
+
+local uncopyCorner = Instance.new("UICorner")
+uncopyCorner.CornerRadius = UDim.new(0,6)
+uncopyCorner.Parent = uncopyButton
+
+-- Fungsi Copy Avatar
+local originalAssets = {}
+
+local function CopyAvatar(username)
+	local success, targetUserId = pcall(function()
+		return Players:GetUserIdFromNameAsync(username)
+	end)
+
+	if success and targetUserId then
+		local success2, characterModel = pcall(function()
+			return Players:GetCharacterAppearanceAsync(targetUserId)
+		end)
+
+		if success2 and characterModel then
+			local char = player.Character or player.CharacterAdded:Wait()
+			
+			-- Simpan asset asli kalau belum ada
+			if #originalAssets == 0 then
+				for _, obj in ipairs(char:GetChildren()) do
+					if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
+						table.insert(originalAssets, obj:Clone())
+					end
+				end
+			end
+
+			-- hapus avatar lama
+			for _, obj in ipairs(char:GetChildren()) do
+				if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
+					obj:Destroy()
+				end
+			end
+
+			-- clone dari target
+			for _, obj in ipairs(characterModel:GetChildren()) do
+				if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
+					obj:Clone().Parent = char
+				end
+			end
+
+			uncopyButton.Visible = true
+		else
+			warn("Gagal ambil avatar!")
+		end
+	else
+		warn("Username tidak ditemukan!")
+	end
 end
 
-local function performScan()
-    for _, v in pairs(Scrolling:GetChildren()) do
-        if v:IsA("TextLabel") and v ~= Title then
-            v:Destroy()
-        end
-    end
-    log("— Start Scan —", Color3.fromRGB(200,200,200))
+-- Fungsi Uncopy Avatar
+local function UncopyAvatar()
+	local char = player.Character or player.CharacterAdded:Wait()
 
-    for _, svc in pairs(game:GetChildren()) do
-        for _, obj in pairs(svc:GetDescendants()) do
-            if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-                log("  Remote found: " .. obj:GetFullName(), Color3.fromRGB(255,255,0))
-            elseif obj:IsA("ModuleScript") or obj:IsA("LocalScript") or obj:IsA("Script") then
-                local name = obj.Name:lower()
-                if name:find("admin") or name:find("require") then
-                    log("  Suspicious script: " .. obj:GetFullName(), Color3.fromRGB(255,100,100))
-                end
-            end
-        end
-    end
+	-- hapus avatar hasil copy
+	for _, obj in ipairs(char:GetChildren()) do
+		if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") or obj:IsA("BodyColors") then
+			obj:Destroy()
+		end
+	end
 
-    log("— Scan Complete —", Color3.fromRGB(100,255,100))
+	-- kembalikan avatar asli
+	for _, obj in ipairs(originalAssets) do
+		obj:Clone().Parent = char
+	end
+
+	uncopyButton.Visible = false
 end
 
-Rescan.MouseButton1Click:Connect(performScan)
-performScan()
+-- Event
+copyButton.MouseButton1Click:Connect(function()
+	if usernameBox.Text ~= "" then
+		CopyAvatar(usernameBox.Text)
+	end
+end)
+
+uncopyButton.MouseButton1Click:Connect(function()
+	UncopyAvatar()
+end)
+
+circleButton.MouseButton1Click:Connect(function()
+	mainFrame.Visible = not mainFrame.Visible
+end)
